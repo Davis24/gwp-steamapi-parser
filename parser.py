@@ -31,7 +31,17 @@ copyfile('curator_game_list.txt', (str(timestr) + '_curator_game_list'))
 game_id_list = list(map(int, game_id_list))
 
 curator_base_url = "https://store.steampowered.com/curator/" 
-curator = "6864182-Hella-Yuri" #TODO: Read this from file
+
+# Curators Lists
+#
+# 6864182-Hella-Yuri
+# 25144145-Gay-Gotta-Game
+# 28742289-Gay-Interest-Gaming
+
+
+curator = "28742289-Gay-Interest-Gaming" #TODO: Read this from file
+
+
 game_base_url = "https://store.steampowered.com/api/appdetails?appids="
 
 new_games = {}
@@ -60,13 +70,13 @@ response = requests.get(url)
 print(response)
 
 json_response = response.json()
-#total_game_count = json_response['total_count']   
-total_game_count = 10
+total_game_count = json_response['total_count']   
+start_game_count = 1
 
 
 ## Loop through all the games within the curator
 ## Assign new games to a dictionary 
-for x in range(1, total_game_count):
+for x in range(start_game_count, total_game_count):
     url = curator_base_url + curator + "/ajaxgetfilteredrecommendations/?query&start=" + str(x) + "&count=1"
 
     response = requests.get(url)
@@ -87,9 +97,11 @@ for x in range(1, total_game_count):
 
     time.sleep(5)
 
+print("Beginning to parse raw data into hash.")
 ## Loop through the new games and get the information
 for key in new_games:
     url = game_base_url + str(key)
+    print(url)
     response = requests.get(url)
     json_response = response.json()
     json_data = json_response[str(key)]['data']
@@ -102,7 +114,12 @@ for key in new_games:
     new_games[key]['publishers'] = json_data['publishers'] 
     new_games[key]['platforms'] =  json_data['platforms']
     new_games[key]['categories'] =  json_data['categories']
-    new_games[key]['genres'] =  json_data['genres']
+    new_games[key]['series_id'] = 1
+    new_games[key]['genres'] = None
+    if('genres' in json_data.keys()):
+        new_games[key]['genres'] =  json_data['genres']
+    
+
     new_games[key]['release_date'] =  json_data['release_date']['date']
     new_games[key]['release_date'] = "test"
     try:
@@ -113,10 +130,11 @@ for key in new_games:
     
 
     new_games[key]['full_list_of_tags'] = [item['description'] for item in new_games[key]['categories']]
-    new_games[key]['full_list_of_tags'].extend(item['description'] for item in new_games[key]['genres'])
+    if('genres' in json_data.keys()):
+        new_games[key]['full_list_of_tags'].extend(item['description'] for item in new_games[key]['genres'])
     new_games[key]['full_list_of_tags'] = listToString(new_games[key]['full_list_of_tags'])
 
-    time.sleep(2)
+    time.sleep(5)
 
 pprint.pprint(new_games)
 
